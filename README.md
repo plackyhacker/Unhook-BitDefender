@@ -14,13 +14,16 @@ The following image shows the `ZwCreateProcess` function when Bit Defender is no
 
 ![No Bit Defender](https://github.com/plackyhacker/UnhookBitDefender/blob/main/NoBitDef.png?raw=true)
 
-The following image shows the `ZwCreateProcess` function when Bit Defender has hooked into **ntdll.dll**
+
+The following image shows the `ZwCreateProcess` function when Bit Defender has hooked into **ntdll.dll**. We can see the `jmp` instruction (this is the hook):
 
 ![No Bit Defender](https://github.com/plackyhacker/UnhookBitDefender/blob/main/BitDefHooks.png?raw=true)
 
-And finally, this image shows the `ZwCreateProcess` function after being unhooked:
+
+And finally, this image shows the `ZwCreateProcess` function after being unhooked (the `jmp` instruction has ben reverted back to the normal syscall):
 
 ![No Bit Defender](https://github.com/plackyhacker/UnhookBitDefender/blob/main/BitDefUnhooked.png?raw=true)
+
 
 # Example
  
