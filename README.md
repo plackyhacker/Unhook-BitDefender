@@ -1,7 +1,7 @@
 # Unhook Bit Defender
 A C# application that unhooks **Bit Defender** from **ntdll.dll** to help run malicious code undetected.
 
-The code is quite long, and I'm sure it could be optimised.
+The code is quite long (particularly the native Win32 structs), and I'm sure it could be optimised.
 
 # Introduction
 This C# code is based upon one of the techniques demonstrated in the RED TEAM Operator: Windows Evasion Course from [Sektor7](https://institute.sektor7.net), the original is written in C/C++. I would recommend any of the malware development courses, there is a lot of great stuff to learn about creating malware in C/C++.
