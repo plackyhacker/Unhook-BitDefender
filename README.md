@@ -22,7 +22,7 @@ The following image shows the `ZwCreateProcess` function when Bit Defender has h
 ![No Bit Defender](https://github.com/plackyhacker/UnhookBitDefender/blob/main/BitDefHooks.png?raw=true)
 
 
-And finally, this image shows the `ZwCreateProcess` function after being unhooked (the `jmp` instruction has ben reverted back to the normal syscall):
+And finally, this image shows the `ZwCreateProcess` function after being unhooked (the `jmp` instruction has been reverted back to the normal syscall):
 
 ![No Bit Defender](https://github.com/plackyhacker/UnhookBitDefender/blob/main/BitDefUnhooked.png?raw=true)
 
