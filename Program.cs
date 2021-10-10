@@ -176,6 +176,9 @@ namespace UnhookNtdll
                 return false;
             }
 
+            Debug("[+] Unmapping view of Ntdll...");
+            UnmapViewOfFile(newNtdllMappingAddress);
+            
             return true;
         }
 
@@ -675,6 +678,9 @@ namespace UnhookNtdll
         [DllImport("kernel32.dll")]
         static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
+        
         #endregion
 
     }
