@@ -94,6 +94,6 @@ msf6 exploit(multi/handler) >
 
 ~~I tested this against Bit Defender with a very basic `Virtualalloc`, `RtlMoveMemory`, `VirtualProtect`, `CreateThread` classic combo (with an encrypted payload). Bit Defender didn't detect anything malicious on disk (with scanning) but did kill the process when `CreateThread` was called.~~
 
-The code was updated to unhook any loaded DLL. Unhooking **ntdll.dll** and **kernelbase.dll** bypasses Bit Defender in my tests.
+The code was updated to unhook any loaded DLL. Unhooking **ntdll.dll** and **kernelbase.dll** bypasses BitDefender in my tests.
 
 Tested with windows/x64/meterpreter/reverse_https on Windows 10 Pro (build 10.0.19043) with BitDefender AntiVirus Free Edition.
