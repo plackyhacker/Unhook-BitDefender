@@ -1,4 +1,4 @@
-# Unhook Bit Defender
+# Unhook BitDefender
 A C# application that unhooks **BitDefender** from **ntdll.dll** and **kernelbase.dll** to help run malicious code undetected.
 
 The code is quite long (particularly the native Win32 structs), and I'm sure it could be optimised.
