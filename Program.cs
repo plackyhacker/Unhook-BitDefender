@@ -793,9 +793,6 @@ namespace UnhookDll
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, uint dwFlags);
-
         #endregion
 
     }
