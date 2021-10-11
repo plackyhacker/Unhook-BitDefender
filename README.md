@@ -92,7 +92,7 @@ msf6 exploit(multi/handler) >
 # Notes
 ~~I haven't tested the code with anything malicious yet to see if it bypasses BitDefender. I will post my findings when I do.~~
 
-~~I tested this against Bit Defender with a very basic `Virtualalloc`, `RtlMoveMemory`, `VirtualProtect`, `CreateThread` classic combo (with an encrypted payload). Bit Defender didn't detect anything malicious on disk (with scanning) but did kill the process when `CreateThread` was called. ~~
+~~I tested this against Bit Defender with a very basic `Virtualalloc`, `RtlMoveMemory`, `VirtualProtect`, `CreateThread` classic combo (with an encrypted payload). Bit Defender didn't detect anything malicious on disk (with scanning) but did kill the process when `CreateThread` was called.~~
 
 The code was updated to unhook any loaded DLL. Unhooking **ntdll.dll** and **kernelbase.dll** bypasses Bit Defender in my tests.
 
