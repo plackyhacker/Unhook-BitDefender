@@ -8,7 +8,7 @@ This C# code is based upon one of the techniques demonstrated in the RED TEAM Op
 
 When Windows creates a new process BitDefender injects the **atcuf64.dll** DLL into the process and hooks many of the **ntdll.dll/kernelbase.dll** functions. If, for example, `NtCreateProcess` is called by malicious code BitDefender is able to intercept the call, do it's anti-malware magic, then return execution to the thread (or kill the process if it is malicious).
 
-The code maps another version of a DLL in memory, finds the `.text` section, and copies it over the hoooked version.
+The code maps another version of a DLL in memory, finds the `.text` section, and copies it over the hooked version.
 
 The code has been updated so you can map and unhook any DLL in memory.
 
